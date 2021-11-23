@@ -53,7 +53,7 @@ Animal:
             - coordinates
           title: 'GeoJSON Point'
           type: object
-     state:
+    state:
       description: 'The state of the animal related to its activity. This enum can be increased'
       enum:
         - walking
