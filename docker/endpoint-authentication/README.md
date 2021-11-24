@@ -9,7 +9,7 @@ In order to run the whole service in a local environment, a docker-compose setup
 
 ## Setup
 
-![Dev-Setup](../doc/img/compose-dev-setup.svg)
+![Dev-Setup](./compose-dev-setup.svg)
 
 The development-setup runs on the host-network to allow the iptables-manipulations defined in [iptables.sh](./iptables.sh).
 This script can be used to setup the iptables to redirect everything that is send to 6060 to 15001. That will redirect the traffic
