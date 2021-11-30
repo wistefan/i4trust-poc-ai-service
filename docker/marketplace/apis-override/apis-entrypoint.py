@@ -8,6 +8,7 @@ DBUSER = "root"
 DBPWD = getenv("MYSQL_ROOT_PASSWORD", "toor")
 DBHOST = getenv("MYSQL_HOST", "localhost")
 DBPORT = getenv("MYSQL_PORT", "3306")
+ADMINPORT = getenv("GLASSFISH_ADMIN_PORT", "4848")
 
 APIS = [{
          "bbdd": "DSPRODUCTCATALOG2",
@@ -48,6 +49,8 @@ APIS = [{
 
 def pool(name, user, pwd, url):
     asadmin("create-jdbc-connection-pool",
+            "--port",
+            ADMINPORT,
             "--restype",
             "java.sql.Driver",
             "--driverclassname",
@@ -59,7 +62,7 @@ def pool(name, user, pwd, url):
 
 # asadmin create-jdbc-resource --connectionpoolid <poolname> <jndiname>
 def resource(name, pool):
-    asadmin("create-jdbc-resource", "--connectionpoolid", pool, name)
+    asadmin("create-jdbc-resource", "--port", ADMINPORT, "--connectionpoolid", pool, name)
 
 
 def generate_mysql_url(db):
@@ -74,7 +77,7 @@ for api in APIS:
 cd("wars")
 for api in APIS:
     try:
-        asadmin("deploy", "--force", "false", "--contextroot", api.get('root'), "--name", api.get('root'), api.get('war'))
+        asadmin("deploy", "--port", ADMINPORT, "--force", "false", "--contextroot", api.get('root'), "--name", api.get('root'), api.get('war'))
     except Exception as e:
         print(unicode(e))
         print('API {} could not be deployed'.format(api.get('bbdd')))

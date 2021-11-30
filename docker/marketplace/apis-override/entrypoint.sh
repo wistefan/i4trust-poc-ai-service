@@ -11,34 +11,46 @@ if [[ -z ${MYSQL_HOST} ]];
 then
     echo MYSQL_HOST is not set
     exit 1
+else
+    echo "MySQL Host: " ${MYSQL_HOST}
 fi
-
 
 if [[ -z ${MYSQL_PORT} ]];
 then
     echo MYSQL_PORT is not set
     exit 1
+else
+    echo "MySQL Port: " ${MYSQL_PORT}
 fi
 
+
+
+if [[ -z ${GLASSFISH_ADMIN_PORT} ]];
+then
+    echo GLASSFISH_ADMIN_PORT is not set
+    exit 1
+else
+    echo "Glassfish Port: " ${GLASSFISH_ADMIN_PORT}
+fi
 ############################################################################################
 
 function create_tables { 
     echo "Creating Database tables"
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSPRODUCTCATALOG2;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSPRODUCTCATALOG2;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSPRODUCTORDERING;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSPRODUCTORDERING;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSPRODUCTINVENTORY;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSPRODUCTINVENTORY;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSPARTYMANAGEMENT;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSPARTYMANAGEMENT;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSBILLINGMANAGEMENT;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSBILLINGMANAGEMENT;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSCUSTOMER;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSCUSTOMER;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS DSUSAGEMANAGEMENT;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS DSUSAGEMANAGEMENT;"
 
-    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS RSS;"
+    mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT} -e "CREATE DATABASE IF NOT EXISTS RSS;"
 }
 
 
@@ -48,17 +60,26 @@ function glassfish_related {
 }
 
 ############################################################################################
+cp /glassfish4/glassfish/domains/domain1/config/domain.xml.template /glassfish4/glassfish/domains/domain1/config/domain.xml
+sed -i "s/GLASSFISH_ADMIN_PORT/${GLASSFISH_ADMIN_PORT}/g" /glassfish4/glassfish/domains/domain1/config/domain.xml
 
 export PATH=$PATH:/glassfish4/glassfish/bin
 asadmin start-domain
 
+mysqlStatus=1
+maxWait=0
 # Test if MySQL is running
-exec 8<>/dev/tcp/${MYSQL_HOST}/${MYSQL_PORT}
-mysqlStatus=$?
-doneTables=1
+while [[ ${mysqlStatus} -eq 1 && ${maxWait} -ne 20 ]]; do
+  sleep 5
+  mysql -u root --password=${MYSQL_ROOT_PASSWORD} -h ${MYSQL_HOST} --port ${MYSQL_PORT}
+  mysqlStatus=$?
+  echo ${mysqlStatus}
+  doneTables=1
+  maxWait=${maxWait}+1
+done
 
 # Test if the glassfish server is running
-exec 9<>/dev/tcp/127.0.0.1/4848
+exec 9<>/dev/tcp/127.0.0.1/${GLASSFISH_ADMIN_PORT}
 glassfishStatus=$?
 doneGlassfish=1
 
@@ -101,7 +122,7 @@ while [[ (${doneTables} -ne 0 || ${doneGlassfish} -ne 0) && $i -lt 50 ]]; do
 
     elif [[ ${glassfishStatus} -ne 0 ]]; then
         # Test if glassfish is now deployed
-        exec 9<>/dev/tcp/127.0.0.1/4848
+        exec 9<>/dev/tcp/127.0.0.1/${GLASSFISH_ADMIN_PORT}
         glassfishStatus=$?
     fi
 done
