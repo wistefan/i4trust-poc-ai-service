@@ -1,9 +1,13 @@
 version: '3.5'
 
-#networks:
-#  bae:
-#    name: bae
-#    external: false
+networks:
+  bae:
+    name: bae
+    external: false
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.0.0/16
 
 services:
   bae-elasticsearch:
@@ -12,15 +16,11 @@ services:
     environment:
       - discovery.type=single-node
       - transport.publish_port=8150
-    #ports:
-    #  - "127.0.0.1:8150:9200"
-    #networks:
-    #  bae:
-    #    aliases:
-    #      - bae-elasticsearch.docker
-    network_mode: host
-    #ports:
-    #  - 8150:9200
+    networks:
+      bae:
+        ipv4_address: 10.2.0.2
+        aliases:
+          - bae-elasticsearch.docker
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
       start_period: 30s
@@ -31,14 +31,11 @@ services:
   bae-mongo:
     image: mongo:3.6.21
     container_name: bae-mongo
-    #networks:
-    #  bae:
-    #    aliases:
-    #      - bae-mongo.docker
-    network_mode: host
-    command: --port 8151
-    #ports:
-    #  - 8151:27017
+    networks:
+      bae:
+        ipv4_address: 10.2.0.3
+        aliases:
+          - bae-mongo.docker
     healthcheck:
       test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
       start_period: 30s
@@ -53,13 +50,11 @@ services:
   bae-mysql:
     image: mysql:5.7
     container_name: bae-mysql
-    #networks:
-    #  bae:
-    #    aliases:
-    #      - bae-mysql.docker
-    network_mode: host
-    #ports: # Need to configure port via app itself TODO
-    #  - 8152:3306
+    networks:
+      bae:
+        ipv4_address: 10.2.0.4
+        aliases:
+          - bae-mysql.docker
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
       start_period: 30s
@@ -74,15 +69,13 @@ services:
   bae-keyrock:
     image: fiware/idm:8.1.0
     container_name: bae-keyrock
-    #networks:
-    #  bae:
-    #    aliases:
-    #      - bae-keyrock.docker
-    network_mode: host
+    networks:
+      bae:
+        ipv4_address: 10.2.0.20
+        aliases:
+          - bae-keyrock.docker
     depends_on:
       - bae-mysql
-    #ports:
-    #  - 8100:8080
     env_file:
       - ./envs/keyrock.env
       
@@ -92,16 +85,14 @@ services:
     depends_on:
       - bae-mysql
     entrypoint: /init/init-apis.sh
-    #networks:
-    #  bae:
-    #    aliases:
-    #      - bae-apis.docker
-    network_mode: host
-    #ports:
-    #  - 8110:8080
+    networks:
+      bae:
+        ipv4_address: 10.2.0.10
+        aliases:
+          - bae-apis.docker
     healthcheck:
-      test: ["CMD", "wget", "-q", "http://localhost:8110/DSProductInventory"]
-      start_period: 120s
+      test: ["CMD", "wget", "-q", "http://localhost:8080/DSProductInventory"]
+      start_period: 60s
       interval: 30s
       timeout: 30s
       retries: 1
@@ -109,78 +100,75 @@ services:
       - ./envs/apis.env
     volumes:
       - ./init/init-apis.sh:/init/init-apis.sh
-      - ./apis-override/entrypoint.sh:/entrypoint.sh
-      - ./apis-override/apis-entrypoint.py:/apis-entrypoint.py
-      - ./apis-override/domain.xml:/glassfish4/glassfish/domains/domain1/config/domain.xml.template
+      
+  bae-rss:
+    image: fiware/biz-ecosystem-rss:v8.0.0
+    container_name: bae-rss
+    depends_on:
+      - bae-mysql
+      - bae-apis
+    entrypoint: /init/init-rss.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.11
+        aliases:
+          - bae-rss.docker
+    healthcheck:
+      test: ["CMD", "/glassfish4/glassfish/bin/asadmin", "show-component-status", "DSRevenueSharing"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 1
+    volumes:
+      - ./init/init-rss.sh:/init/init-rss.sh
+    env_file:
+      - ./envs/rss.env
 
-#  bae-rss:
-#    image: fiware/biz-ecosystem-rss:v8.0.0
-#    container_name: bae-rss
-#    depends_on:
-#      - bae-mysql
-#      - bae-apis
-#    entrypoint: /init/init-rss.sh
-#    #networks:
-#    #  bae:
-#    #    aliases:
-#    #      - bae-rss.docker
-#    network_mode: host
-#    #ports:
-#    #  - 8120:8080
-#    healthcheck:
-#      test: ["CMD", "/glassfish4/glassfish/bin/asadmin", "show-component-status", "DSRevenueSharing"]
-#      start_period: 120s
-#      interval: 30s
-#      timeout: 30s
-#      retries: 1
-#    volumes:
-#      - ./init/init-rss.sh:/init/init-rss.sh
-#    env_file:
-#      - ./envs/rss.env
-#
-#  bae-charging:
-#    image: fiware/biz-ecosystem-charging-backend:v8.0.0
-#    container_name: bae-charging
-#    depends_on:
-#      - bae-mongo
-#      - bae-apis
-#    entrypoint: /init/init-charging.sh
-#    #networks:
-#    #  bae:
-#    #    aliases:
-#    #      - bae-charging.docker
-#    network_mode: host
-#    #ports:
-#    #  - 8106:8006
-#    healthcheck:
-#      test: ["CMD", "wget", "-q", "http://bae-charging.docker:8106/charging/api/assetManagement/currencyCodes"]
-#      start_period: 180s
-#      interval: 30s
-#      timeout: 30s
-#      retries: 1
-#    volumes:
-#      - ./init/init-charging.sh:/init/init-charging.sh
-#      - ./charging-override/entrypoint.sh:/entrypoint.sh
-#    env_file:
-#      - ./envs/charging.env
-#
-#  bae-proxy:
-#    image: fiware/biz-ecosystem-logic-proxy:v8.0.0
-#    container_name: bae-proxy
-#    depends_on:
-#      - bae-mongo
-#      - bae-apis
-#      - bae-rss
-#      - bae-charging
-#    entrypoint: /init/init-proxy.sh
-#    #networks:
-#    #  bae:
-#    #    aliases:
-#    #      - bae-proxy.docker
-#    network_mode: host
-#    #ports:
-#    #  - 8104:8004
-#    volumes:
-#      - ./init/init-proxy.sh:/init/init-proxy.sh
-#    env_file:
-#      - ./envs/proxy.env
+  bae-charging:
+    image: fiware/biz-ecosystem-charging-backend:v8.0.0
+    container_name: bae-charging
+    depends_on:
+      - bae-mongo
+      - bae-apis
+      - bae-rss
+    entrypoint: /init/init-charging.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.12
+        aliases:
+          - bae-charging.docker
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://localhost:8006/charging/api/assetManagement/currencyCodes"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 1
+    volumes:
+      - ./init/init-charging.sh:/init/init-charging.sh
+    env_file:
+      - ./envs/charging.env
+
+  bae-proxy:
+    image: fiware/biz-ecosystem-logic-proxy:v8.0.0
+    container_name: bae-proxy
+    depends_on:
+      - bae-mongo
+      - bae-apis
+      - bae-rss
+      - bae-charging
+    entrypoint: /init/init-proxy.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.13
+        aliases:
+          - bae-proxy.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:8004/version || exit 1"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    volumes:
+      - ./init/init-proxy.sh:/init/init-proxy.sh
+    env_file:
+      - ./envs/proxy.env
