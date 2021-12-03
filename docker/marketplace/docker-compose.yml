@@ -15,7 +15,7 @@ services:
     container_name: bae-elasticsearch
     environment:
       - discovery.type=single-node
-      - transport.publish_port=8150
+      - transport.publish_port=9200
     networks:
       bae:
         ipv4_address: 10.2.0.2
