@@ -16,8 +16,8 @@ that no IPs are already being used in this subnet.
 The BAE requires private key and certificate files being registered with the EORI of the marketplace at the 
 iSHARE Satellite. These are added as secrets within the docker compose file. 
 Before running the BAE, provide the file locations of private key and certificate in 
-the (./.env) file and enter the corresponding EORI in the environment variable `BAE_EORI` of the files 
-(./envs/charging.env) and (./envs/proxy.env).
+the [.env](./.env) file and enter the corresponding EORI in the environment variable `BAE_EORI` of the files 
+[charging.env](./envs/charging.env) and [proxy.env](./envs/proxy.env).
 
 
 ### Deployment
