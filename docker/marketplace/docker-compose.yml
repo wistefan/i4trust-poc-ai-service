@@ -1,0 +1,174 @@
+version: '3.5'
+
+networks:
+  bae:
+    name: bae
+    external: false
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.0.0/16
+
+services:
+  bae-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    container_name: bae-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - transport.publish_port=9200
+    networks:
+      bae:
+        ipv4_address: 10.2.0.2
+        aliases:
+          - bae-elasticsearch.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+              
+  bae-mongo:
+    image: mongo:3.6.21
+    container_name: bae-mongo
+    networks:
+      bae:
+        ipv4_address: 10.2.0.3
+        aliases:
+          - bae-mongo.docker
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./envs/mongo.env
+    volumes:
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
+  bae-mysql:
+    image: mysql:5.7
+    container_name: bae-mysql
+    networks:
+      bae:
+        ipv4_address: 10.2.0.4
+        aliases:
+          - bae-mysql.docker
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./envs/mysql.env
+    volumes:
+      - ./db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
+
+  bae-keyrock:
+    image: fiware/idm:8.1.0
+    container_name: bae-keyrock
+    networks:
+      bae:
+        ipv4_address: 10.2.0.20
+        aliases:
+          - bae-keyrock.docker
+    depends_on:
+      - bae-mysql
+    env_file:
+      - ./envs/keyrock.env
+      
+  bae-apis:
+    image: fiware/biz-ecosystem-apis:v7.6.0
+    container_name: bae-apis
+    depends_on:
+      - bae-mysql
+    entrypoint: /init/init-apis.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.10
+        aliases:
+          - bae-apis.docker
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://localhost:8080/DSProductInventory"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 1
+    env_file:
+      - ./envs/apis.env
+    volumes:
+      - ./init/init-apis.sh:/init/init-apis.sh
+      
+  bae-rss:
+    image: fiware/biz-ecosystem-rss:v8.0.0
+    container_name: bae-rss
+    depends_on:
+      - bae-mysql
+      - bae-apis
+    entrypoint: /init/init-rss.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.11
+        aliases:
+          - bae-rss.docker
+    healthcheck:
+      test: ["CMD", "/glassfish4/glassfish/bin/asadmin", "show-component-status", "DSRevenueSharing"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 1
+    volumes:
+      - ./init/init-rss.sh:/init/init-rss.sh
+    env_file:
+      - ./envs/rss.env
+
+  bae-charging:
+    image: fiware/biz-ecosystem-charging-backend:v8.0.0
+    container_name: bae-charging
+    depends_on:
+      - bae-mongo
+      - bae-apis
+      - bae-rss
+    entrypoint: /init/init-charging.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.12
+        aliases:
+          - bae-charging.docker
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://localhost:8006/charging/api/assetManagement/currencyCodes"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 1
+    volumes:
+      - ./init/init-charging.sh:/init/init-charging.sh
+    env_file:
+      - ./envs/charging.env
+
+  bae-proxy:
+    image: fiware/biz-ecosystem-logic-proxy:v8.0.0
+    container_name: bae-proxy
+    depends_on:
+      - bae-mongo
+      - bae-apis
+      - bae-rss
+      - bae-charging
+    entrypoint: /init/init-proxy.sh
+    networks:
+      bae:
+        ipv4_address: 10.2.0.13
+        aliases:
+          - bae-proxy.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:8004/version || exit 1"]
+      start_period: 60s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    volumes:
+      - ./init/init-proxy.sh:/init/init-proxy.sh
+    env_file:
+      - ./envs/proxy.env
