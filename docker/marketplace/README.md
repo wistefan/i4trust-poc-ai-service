@@ -2,9 +2,25 @@
 
 Recipes for running an instance of the Business API Ecosystem (BAE) as marketplace for provisioning of the AI Service.
 
+
 ## Instructions
 
 A docker compose file is provided for running a full setup of the BAE including the Keyrock IDP.
+
+
+### Configuration
+
+The Docker compose file uses fixed IPs for each container within the subnet `10.2.0.0`. Therefore make sure 
+that no IPs are already being used in this subnet.
+
+The BAE requires private key and certificate files being registered with the EORI of the marketplace at the 
+iSHARE Satellite. These are added as secrets within the docker compose file. 
+Before running the BAE, provide the file locations of private key and certificate in 
+the (./.env) file and enter the corresponding EORI in the environment variable `BAE_EORI` of the files 
+(./envs/charging.env) and (./envs/proxy.env).
+
+
+### Deployment
 
 For deploying all components, simply run
 ```shell
@@ -16,8 +32,7 @@ For stopping all containers, simply run
 docker-compose down
 ```
 
-The Docker compose file uses fixed IPs for each container within the subnet `10.2.0.0`. Therefore make sure 
-that no IPs are already being used in this subnet.
+
 
 
 
