@@ -154,6 +154,9 @@ services:
     secrets:
       - bae_key
       - bae_cert
+    environment:
+      - BAE_TOKEN_KEY_CONTENT
+      - BAE_TOKEN_CRT_CONTENT
     env_file:
       - ./envs/charging.env
 
@@ -182,5 +185,8 @@ services:
     secrets:
       - bae_key
       - bae_cert
+    environment:
+      - BAE_TOKEN_KEY_CONTENT
+      - BAE_TOKEN_CRT_CONTENT
     env_file:
       - ./envs/proxy.env

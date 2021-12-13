@@ -19,6 +19,9 @@ Before running the BAE, provide the file locations of private key and certificat
 the [.env](./.env) file and enter the corresponding EORI in the environment variable `BAE_EORI` of the files 
 [charging.env](./envs/charging.env) and [proxy.env](./envs/proxy.env).
 
+Alternatively, the content of the private key and certificate files can be directly provided as an ENV by 
+exporting the contents to the variables `BAE_TOKEN_KEY_CONTENT` and `BAE_TOKEN_CRT_CONTENT`, respectively.
+
 
 ### Deployment
 

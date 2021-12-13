@@ -4,6 +4,20 @@
 MAX_RETRIES=60
 INTERVAL=10
 
+# Check if key/cert content is set as ENV and export to separate key/cert file
+if [ -n "$BAE_TOKEN_KEY_CONTENT" ]; then
+    echo "Private key content found as ENV, exporting to /run/secrets/key.pem"
+    echo "${BAE_TOKEN_KEY_CONTENT}" > /run/secrets/key.pem
+    echo "Overwriting ENV BAE_TOKEN_KEY with /run/secrets/key.pem"
+    export BAE_TOKEN_KEY="/run/secrets/key.pem"
+fi
+if [ -n "$BAE_TOKEN_CRT_CONTENT" ]; then
+    echo "Certificate content found as ENV, exporting to /run/secrets/crt.pem"
+    echo "${BAE_TOKEN_CRT_CONTENT}" > /run/secrets/crt.pem
+    echo "Overwriting ENV BAE_TOKEN_CRT with /run/secrets/crt.pem"
+    export BAE_TOKEN_CRT="/run/secrets/crt.pem"
+fi
+
 # Wait for Mongo
 # --> No mongo client in container
 #while ! mongo --host bae-mongo.docker --eval "printjson(db.serverStatus())";
