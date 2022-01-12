@@ -5,6 +5,7 @@ Recipes for running an instance of the Business API Ecosystem (BAE) as marketpla
 Open topics:
 
 * Integration of asset plugin in file system and DB (when plugin available)
+* Adding external IDPs to DB for login (when EORIs of other organisations are available and other orgs environments are setup)
 
 
 ## Instructions
