@@ -2,6 +2,10 @@
 
 Recipes for running an instance of the Business API Ecosystem (BAE) as marketplace for provisioning of the AI Service.
 
+Open topics:
+
+* Integration of asset plugin in file system and DB (when plugin available)
+
 
 ## Instructions
 
