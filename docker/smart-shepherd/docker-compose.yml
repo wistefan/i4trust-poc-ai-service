@@ -1,0 +1,98 @@
+version: '3.5'
+
+networks:
+  shepherd:
+    name: shepherd
+    external: false
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.2.0/16
+
+secrets:
+  shepherd_key:
+    file: "${SHEPHERD_TOKEN_KEY_FILE}"
+  shepherd_cert:
+    file: "${SHEPHERD_TOKEN_CRT_FILE}"
+
+services:
+  shepherd-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    container_name: shepherd-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - transport.publish_port=9200
+    networks:
+      shepherd:
+        ipv4_address: 10.2.2.2
+        aliases:
+          - shepherd-elasticsearch.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  shepherd-mongo:
+    image: mongo:3.6.21
+    container_name: shepherd-mongo
+    networks:
+      shepherd:
+        ipv4_address: 10.2.2.3
+        aliases:
+          - shepherd-mongo.docker
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./envs/mongo.env
+    volumes:
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
+  shepherd-mysql:
+    image: mysql:5.7
+    container_name: shepherd-mysql
+    networks:
+      shepherd:
+        ipv4_address: 10.2.2.4
+        aliases:
+          - shepherd-mysql.docker
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./envs/mysql.env
+    volumes:
+      - ./db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
+
+  shepherd-keyrock:
+    image: fiware/idm:i4trust-rc6
+    container_name: shepherd-keyrock
+    networks:
+      shepherd:
+        ipv4_address: 10.2.2.20
+        aliases:
+          - shepherd-keyrock.docker
+    depends_on:
+      - shepherd-mysql
+    entrypoint: /init/init-keyrock.sh
+    env_file:
+      - ./envs/keyrock.env
+    secrets:
+      - shepherd_key
+      - shepherd_cert
+    environment:
+      - SHEPHERD_EORI
+      - SHEPHERD_TOKEN_KEY_CONTENT
+      - SHEPHERD_TOKEN_CRT_CONTENT
+      - SHEPHERD_TOKEN_KEY_FILE
+      - SHEPHERD_TOKEN_CRT_FILE
+    volumes:
+      - ./init/init-keyrock.sh:/init/init-keyrock.sh

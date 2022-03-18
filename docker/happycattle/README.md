@@ -1,10 +1,11 @@
-# HappyCattle
+# Happy Cattle
 
 Recipes for running the necessary components of HappyCattle.
 
-* Context Broker (orionld)
+TODO:
+* Context Broker (orionld) + Sidecar-Proxy
 * API Umbrella
-* Keyrock
+* Keyrock (incl. AR functionality)
 * Databases
 
 

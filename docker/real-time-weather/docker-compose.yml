@@ -1,0 +1,72 @@
+version: '3.5'
+
+networks:
+  bae:
+    name: rtw
+    external: false
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.1.0/16
+
+secrets:
+  rtw_key:
+    file: "${RTW_TOKEN_KEY_FILE}"
+  rtw_cert:
+    file: "${RTW_TOKEN_CRT_FILE}"
+
+services:
+  rtw-mongo:
+    image: mongo:3.6.21
+    container_name: rtw-mongo
+    networks:
+      bae:
+        ipv4_address: 10.2.1.1
+        aliases:
+          - rtw-mongo.docker
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./envs/mongo.env
+    volumes:
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+
+  rtw-mysql:
+    image: mysql:5.7
+    container_name: rtw-mysql
+    networks:
+      bae:
+        ipv4_address: 10.2.1.2
+        aliases:
+          - rtw-mysql.docker
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./envs/mysql.env
+    volumes:
+      - ./db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
+      
+  rtw-keyrock:
+    image: fiware/idm:8.1.0
+    container_name: bae-keyrock
+    networks:
+      bae:
+        ipv4_address: 10.2.1.10
+        aliases:
+          - rtw-keyrock.docker
+    depends_on:
+      - rtw-mysql
+    env_file:
+      - ./envs/keyrock.env
+
+  # Umbrella
+
+  # Broker
