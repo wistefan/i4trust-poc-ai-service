@@ -6,6 +6,7 @@ Open tasks:
 * Add Sidecar-Proxy and configure for usage with orion instance and using the configured iSHARE key/certificate
 * Pre-configuration (via mongodump) of API Umbrella for: subscription endpoint (orion), notification endpoint, 
   Auth Service Configuration endpoint
+* Initial policy at Keyrock AR allowing the Marketplace to create policies during acquisition
 * Add AI Service
 
 
