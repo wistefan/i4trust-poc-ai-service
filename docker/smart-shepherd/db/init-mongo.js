@@ -17,4 +17,17 @@ db.createUser(
     }
 );
 
-// Orion?
+// Orion
+db = db.getSiblingDB('orion');
+db.createUser(
+    {
+	user: "orion",
+	pwd: "orion",
+	roles: [
+	    {
+		role: "readWrite",
+		db: "orion"
+	    }
+	]
+    }
+);

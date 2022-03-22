@@ -51,7 +51,9 @@ services:
     env_file:
       - ./envs/mongo.env
     volumes:
-      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/01_init-mongo.js:ro
+      - ./db/init-mongo-dump.sh:/docker-entrypoint-initdb.d/02_init-mongo-dump.sh:ro
+      - ./db/api_umbrella:/dump/api_umbrella
 
   shepherd-mysql:
     image: mysql:5.7
@@ -96,3 +98,46 @@ services:
       - SHEPHERD_TOKEN_CRT_FILE
     volumes:
       - ./init/init-keyrock.sh:/init/init-keyrock.sh
+
+  shepherd-umbrella:
+    image: fiware/api-umbrella:0.18.0
+    container_name: shepherd-umbrella
+    networks:
+      shepherd:
+        ipv4_address: 10.2.2.30
+        aliases:
+          - shepherd-umbrella.docker
+    depends_on:
+      - shepherd-mongo
+    entrypoint: /init/init-umbrella.sh
+    secrets:
+      - shepherd_key
+      - shepherd_cert
+    environment:
+      - SHEPHERD_EORI
+      - SHEPHERD_TOKEN_KEY_CONTENT
+      - SHEPHERD_TOKEN_CRT_CONTENT
+      - SHEPHERD_TOKEN_KEY_FILE
+      - SHEPHERD_TOKEN_CRT_FILE
+    volumes:
+      - ./init/init-umbrella.sh:/init/init-umbrella.sh
+      - ./umbrella-conf/api-umbrella.template.yml:/etc/api-umbrella/api-umbrella.template.yml
+    tmpfs:
+      # Mount the ember-cli tmp directory as a tmpfs partition for better
+      # performance.
+      - /app/src/api-umbrella/admin-ui/tmp:rw,size=128m,mode=1777
+
+  shepherd-orion:
+    image: quay.io/fiware/orion-ld:1.0.1
+    container_name: shepherd-orion
+    networks:
+      shepherd:
+        ipv4_address: 10.2.2.40
+        aliases:
+          - shepherd-orion.docker
+    depends_on:
+      - shepherd-mongo
+    env_file:
+      - ./envs/orion.env
+    command: -dbhost shepherd-mongo.docker -logLevel DEBUG
+      
