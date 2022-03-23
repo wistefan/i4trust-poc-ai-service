@@ -1,32 +1,32 @@
 version: '3.5'
 
 networks:
-  shepherd:
-    name: shepherd
+  happycattle:
+    name: happycattle
     external: false
     driver: bridge
     ipam:
       config:
-        - subnet: 10.2.2.0/16
+        - subnet: 10.2.1.0/16
 
 secrets:
-  shepherd_key:
-    file: "${SHEPHERD_TOKEN_KEY_FILE}"
-  shepherd_cert:
-    file: "${SHEPHERD_TOKEN_CRT_FILE}"
+  happycattle_key:
+    file: "${HAPPYCATTLE_TOKEN_KEY_FILE}"
+  happycattle_cert:
+    file: "${HAPPYCATTLE_TOKEN_CRT_FILE}"
 
 services:
-  shepherd-elasticsearch:
+  happycattle-elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
-    container_name: shepherd-elasticsearch
+    container_name: happycattle-elasticsearch
     environment:
       - discovery.type=single-node
       - transport.publish_port=9200
     networks:
-      shepherd:
-        ipv4_address: 10.2.2.2
+      happycattle:
+        ipv4_address: 10.2.1.2
         aliases:
-          - shepherd-elasticsearch.docker
+          - happycattle-elasticsearch.docker
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
       start_period: 30s
@@ -34,14 +34,14 @@ services:
       timeout: 30s
       retries: 3
 
-  shepherd-mongo:
+  happycattle-mongo:
     image: mongo:3.6.21
-    container_name: shepherd-mongo
+    container_name: happycattle-mongo
     networks:
-      shepherd:
-        ipv4_address: 10.2.2.3
+      happycattle:
+        ipv4_address: 10.2.1.3
         aliases:
-          - shepherd-mongo.docker
+          - happycattle-mongo.docker
     healthcheck:
       test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
       start_period: 30s
@@ -55,14 +55,14 @@ services:
       - ./db/init-mongo-dump.sh:/docker-entrypoint-initdb.d/02_init-mongo-dump.sh:ro
       - ./db/api_umbrella:/dump/api_umbrella
 
-  shepherd-mysql:
+  happycattle-mysql:
     image: mysql:5.7
-    container_name: shepherd-mysql
+    container_name: happycattle-mysql
     networks:
-      shepherd:
-        ipv4_address: 10.2.2.4
+      happycattle:
+        ipv4_address: 10.2.1.4
         aliases:
-          - shepherd-mysql.docker
+          - happycattle-mysql.docker
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
       start_period: 30s
@@ -74,51 +74,57 @@ services:
     volumes:
       - ./db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
 
-  shepherd-keyrock:
+  happycattle-keyrock:
     image: fiware/idm:i4trust-rc6
-    container_name: shepherd-keyrock
+    container_name: happycattle-keyrock
     networks:
-      shepherd:
-        ipv4_address: 10.2.2.20
+      happycattle:
+        ipv4_address: 10.2.1.20
         aliases:
-          - shepherd-keyrock.docker
+          - happycattle-keyrock.docker
     depends_on:
-      - shepherd-mysql
+      - happycattle-mysql
     entrypoint: /init/init-keyrock.sh
     env_file:
       - ./envs/keyrock.env
     secrets:
-      - shepherd_key
-      - shepherd_cert
+      - happycattle_key
+      - happycattle_cert
     environment:
-      - SHEPHERD_EORI
-      - SHEPHERD_TOKEN_KEY_CONTENT
-      - SHEPHERD_TOKEN_CRT_CONTENT
-      - SHEPHERD_TOKEN_KEY_FILE
-      - SHEPHERD_TOKEN_CRT_FILE
+      - HAPPYCATTLE_EORI
+      - HAPPYCATTLE_TOKEN_KEY_CONTENT
+      - HAPPYCATTLE_TOKEN_CRT_CONTENT
+      - HAPPYCATTLE_TOKEN_KEY_FILE
+      - HAPPYCATTLE_TOKEN_CRT_FILE
     volumes:
       - ./init/init-keyrock.sh:/init/init-keyrock.sh
 
-  shepherd-umbrella:
+  happycattle-umbrella:
     image: fiware/api-umbrella:0.18.0
-    container_name: shepherd-umbrella
+    container_name: happycattle-umbrella
     networks:
-      shepherd:
-        ipv4_address: 10.2.2.30
+      happycattle:
+        ipv4_address: 10.2.1.30
         aliases:
-          - shepherd-umbrella.docker
+          - happycattle-umbrella.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost/api-umbrella/v1/health | python -mjson.tool | grep '\"status\": \"green\"' || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
     depends_on:
-      - shepherd-mongo
+      - happycattle-mongo
     entrypoint: /init/init-umbrella.sh
     secrets:
-      - shepherd_key
-      - shepherd_cert
+      - happycattle_key
+      - happycattle_cert
     environment:
-      - SHEPHERD_EORI
-      - SHEPHERD_TOKEN_KEY_CONTENT
-      - SHEPHERD_TOKEN_CRT_CONTENT
-      - SHEPHERD_TOKEN_KEY_FILE
-      - SHEPHERD_TOKEN_CRT_FILE
+      - HAPPYCATTLE_EORI
+      - HAPPYCATTLE_TOKEN_KEY_CONTENT
+      - HAPPYCATTLE_TOKEN_CRT_CONTENT
+      - HAPPYCATTLE_TOKEN_KEY_FILE
+      - HAPPYCATTLE_TOKEN_CRT_FILE
     volumes:
       - ./init/init-umbrella.sh:/init/init-umbrella.sh
       - ./umbrella-conf/api-umbrella.template.yml:/etc/api-umbrella/api-umbrella.template.yml
@@ -127,14 +133,14 @@ services:
       # performance.
       - /app/src/api-umbrella/admin-ui/tmp:rw,size=128m,mode=1777
 
-  shepherd-orion:
+  happycattle-orion:
     image: quay.io/fiware/orion-ld:1.0.1
-    container_name: shepherd-orion
+    container_name: happycattle-orion
     networks:
-      shepherd:
-        ipv4_address: 10.2.2.40
+      happycattle:
+        ipv4_address: 10.2.1.40
         aliases:
-          - shepherd-orion.docker
+          - happycattle-orion.docker
     healthcheck:
       test: ["CMD-SHELL", "curl --silent --fail localhost:1026/version || exit 1"]
       start_period: 30s
@@ -142,8 +148,8 @@ services:
       timeout: 30s
       retries: 3
     depends_on:
-      - shepherd-mongo
+      - happycattle-mongo
     env_file:
       - ./envs/orion.env
-    command: -dbhost shepherd-mongo.docker -logLevel DEBUG
+    command: -dbhost happycattle-mongo.docker -logLevel DEBUG
       
