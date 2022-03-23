@@ -1,13 +1,13 @@
 version: '3.5'
 
 networks:
-  bae:
+  rtw:
     name: rtw
     external: false
     driver: bridge
     ipam:
       config:
-        - subnet: 10.2.1.0/16
+        - subnet: 10.5.0.0/16
 
 secrets:
   rtw_key:
@@ -16,12 +16,30 @@ secrets:
     file: "${RTW_TOKEN_CRT_FILE}"
 
 services:
+  rtw-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    container_name: rtw-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - transport.publish_port=9200
+    networks:
+      rtw:
+        ipv4_address: 10.5.0.2
+        aliases:
+          - rtw-elasticsearch.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
   rtw-mongo:
     image: mongo:3.6.21
     container_name: rtw-mongo
     networks:
-      bae:
-        ipv4_address: 10.2.1.1
+      rtw:
+        ipv4_address: 10.5.0.3
         aliases:
           - rtw-mongo.docker
     healthcheck:
@@ -33,14 +51,16 @@ services:
     env_file:
       - ./envs/mongo.env
     volumes:
-      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/01_init-mongo.js:ro
+      - ./db/init-mongo-dump.sh:/docker-entrypoint-initdb.d/02_init-mongo-dump.sh:ro
+      - ./db/api_umbrella:/dump/api_umbrella
 
   rtw-mysql:
     image: mysql:5.7
     container_name: rtw-mysql
     networks:
-      bae:
-        ipv4_address: 10.2.1.2
+      rtw:
+        ipv4_address: 10.5.0.4
         aliases:
           - rtw-mysql.docker
     healthcheck:
@@ -53,20 +73,83 @@ services:
       - ./envs/mysql.env
     volumes:
       - ./db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
-      
+
   rtw-keyrock:
-    image: fiware/idm:8.1.0
-    container_name: bae-keyrock
+    image: fiware/idm:i4trust-rc6
+    container_name: rtw-keyrock
     networks:
-      bae:
-        ipv4_address: 10.2.1.10
+      rtw:
+        ipv4_address: 10.5.0.20
         aliases:
           - rtw-keyrock.docker
     depends_on:
       - rtw-mysql
+    entrypoint: /init/init-keyrock.sh
     env_file:
       - ./envs/keyrock.env
+    secrets:
+      - rtw_key
+      - rtw_cert
+    environment:
+      - RTW_EORI
+      - RTW_TOKEN_KEY_CONTENT
+      - RTW_TOKEN_CRT_CONTENT
+      - RTW_TOKEN_KEY_FILE
+      - RTW_TOKEN_CRT_FILE
+    volumes:
+      - ./init/init-keyrock.sh:/init/init-keyrock.sh
 
-  # Umbrella
+  rtw-umbrella:
+    image: fiware/api-umbrella:0.18.0
+    container_name: rtw-umbrella
+    networks:
+      rtw:
+        ipv4_address: 10.5.0.30
+        aliases:
+          - rtw-umbrella.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost/api-umbrella/v1/health | python -mjson.tool | grep '\"status\": \"green\"' || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - rtw-mongo
+    entrypoint: /init/init-umbrella.sh
+    secrets:
+      - rtw_key
+      - rtw_cert
+    environment:
+      - RTW_EORI
+      - RTW_TOKEN_KEY_CONTENT
+      - RTW_TOKEN_CRT_CONTENT
+      - RTW_TOKEN_KEY_FILE
+      - RTW_TOKEN_CRT_FILE
+    volumes:
+      - ./init/init-umbrella.sh:/init/init-umbrella.sh
+      - ./umbrella-conf/api-umbrella.template.yml:/etc/api-umbrella/api-umbrella.template.yml
+    tmpfs:
+      # Mount the ember-cli tmp directory as a tmpfs partition for better
+      # performance.
+      - /app/src/api-umbrella/admin-ui/tmp:rw,size=128m,mode=1777
 
-  # Broker
+  rtw-orion:
+    image: quay.io/fiware/orion-ld:1.0.1
+    container_name: rtw-orion
+    networks:
+      rtw:
+        ipv4_address: 10.5.0.40
+        aliases:
+          - rtw-orion.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:1026/version || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - rtw-mongo
+    env_file:
+      - ./envs/orion.env
+    command: -dbhost rtw-mongo.docker -logLevel DEBUG
+      

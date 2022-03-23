@@ -5,7 +5,8 @@ Recipes for running an instance of the Business API Ecosystem (BAE) as marketpla
 Open topics:
 
 * Integration of asset plugin in file system and DB (when plugin available)
-* Adding external IDPs to DB for login (when EORIs of other organisations are available and registered at the 
+* Adding external IDPs (Keyrock instances of Happy Cattle, Smart Shepherd, Real Time Weather) to DB for 
+  login (when EORIs of other organisations are available and registered at the 
   satellite and other orgs environments are setup)
 
 
@@ -47,14 +48,27 @@ docker-compose down
 
 ## Usage
 
+### BAE
+
 As soon as the Logic Proxy component of the BAE is healthy, you can open the marketplace start page 
 on your host's browser by opening the URL: [http://10.2.0.13:8004](http://10.2.0.13:8004). 
-Login can be performed using the pre-configured Keyrock IDP. For a first test, hit the Login button and
+Login can be performed using the pre-configured Keyrock IDP with the name "Local IDP". 
+For a first test, hit the Login button and
 enter the admin credentials:
 ```
 Username: admin@test.com
 Password: admin
 ```
+You are now logged in as a user with admin priviliges on the BAE. 
+
+E.g., an admin is able to add 
+further external Identity Providers (IDPs) from the other participants to be used for logging in. After 
+adding those external IDPs, these appear as well in the login dialog. This allows users from other participants 
+to use their own IDP for login.
+
+
+
+### Keyrock
 
 You can also login directly at the Keyrock IDP by opening [http://10.2.0.20:8080](http://10.2.0.20:8080) 
 within your browser and using the same admin credentials. When being logged in, you will find a pre-configured 

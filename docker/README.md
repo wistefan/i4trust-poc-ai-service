@@ -2,7 +2,7 @@
 
 Recipes for deploying and running a full instance of the AI Service Proof of Concept.
 
-There are four environments to be setup: 
+There are four environments of the different participants to be setup: 
 * Smart Shepherd (AI Service Provider and Data Service Consumer)
 * Happy Cattle (AI Service Consumer)
 * Real Time Weather (Data Service Provider)
@@ -19,16 +19,16 @@ The setups use fixed IPs for each container within different subnets. Therefore 
 that no IPs are already being used in these subnets. Otherwise change the docker compose files accordingly. 
 The components of each participant are deployed in a separate subnet:
 * Marketplace: 10.2.0.0/16
-* Happy Cattle: 10.2.1.0/16
-* Smart Shepherd: 10.2.2.0/16
-* Real Time Weather: 10.2.3.0/16
+* Happy Cattle: 10.3.0.0/16
+* Smart Shepherd: 10.4.0.0/16
+* Real Time Weather: 10.5.0.0/16
 
 Some components require private key and certificate files being registered with an EORI at the 
 iSHARE Satellite. Those need to be obtained before and configured in the different environments of the 
 participants.
 
 For deployment of all components, enter each of the participants directories and deploy the components 
-using the docker compose files.
+using the docker compose files, as described in the README of each participant.
 
 
 ### MacOS
