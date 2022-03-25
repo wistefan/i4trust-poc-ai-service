@@ -7,12 +7,6 @@ Open tasks:
 * Pre-configuration (via mongodump) of API Umbrella for: weather service endpoint (Orion)
 
 
-TODO:
-* Context Broker (orionld)
-* API Umbrella
-* Keyrock (incl. AR functionality) + Activation Service
-* Databases
-
 
 ## Instructions
 
