@@ -56,7 +56,7 @@ As soon as the components are healthy, you can open the Keyrock IDP and the API 
 
 ### Keyrock
 
-For Keyrock, open the page [http://10.5.0.20:8080](http://10.5.0.20:8080) 
+For Keyrock, open the page [http://10.2.0.40:8080](http://10.2.0.40:8080) 
 within your browser and use the following admin credentials: 
 ```
 Username: admin@test.com
@@ -74,7 +74,7 @@ organisation of Real Time Weather.
 
 ### API Umbrella
 
-For API Umbrella, open the page [http://10.5.0.30/admin](http://10.5.0.30/admin) 
+For API Umbrella, open the page [http://10.2.0.41/admin](http://10.2.0.41/admin) 
 within your browser and use the following admin credentials: 
 ```
 Username: admin@test.com
@@ -84,7 +84,7 @@ This account can be used to add API Backends and perform any administrative task
 
 
 ### Orion
-
+REMOVE
 Check that Orion is running by executing the following command:
 ```shell
 curl 10.5.0.40:1026/version

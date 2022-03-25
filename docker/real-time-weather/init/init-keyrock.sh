@@ -38,6 +38,33 @@ else
     exit 1
 fi
 
+# Check iSHARE Satellite ENVs
+if [ -n "$SATELLITE_HOST" ]; then
+    export IDM_PR_URL=${SATELLITE_HOST}
+else
+    echo "ERROR: No host set for iSHARE satellite (ENV: SATELLITE_HOST)"
+    exit 1
+fi
+if [ -n "$SATELLITE_TOKEN_ENDPOINT" ]; then
+    export IDM_PR_TOKEN_ENDPOINT=${SATELLITE_TOKEN_ENDPOINT}
+else
+    echo "ERROR: No token endpoint set for iSHARE satellite (ENV: SATELLITE_TOKEN_ENDPOINT)"
+    exit 1
+fi
+if [ -n "$SATELLITE_PARTIES_ENDPOINT" ]; then
+    export IDM_PR_PARTIES_ENDPOINT=${SATELLITE_PARTIES_ENDPOINT}
+else
+    echo "ERROR: No parties endpoint set for iSHARE satellite (ENV: SATELLITE_PARTIES_ENDPOINT)"
+    exit 1
+fi
+if [ -n "$SATELLITE_EORI" ]; then
+    export IDM_PR_ID=${SATELLITE_EORI}
+else
+    echo "ERROR: No EORI set for iSHARE satellite (ENV: SATELLITE_EORI)"
+    exit 1
+fi
+
+
 # Start Keyrock
 echo "Starting Keyrock"
 npm start

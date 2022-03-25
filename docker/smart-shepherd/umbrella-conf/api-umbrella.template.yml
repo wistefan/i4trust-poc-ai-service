@@ -5,7 +5,7 @@ services:
   - web
 
 router:
-  web_app_host: "10.2.2.30"
+  web_app_host: "10.2.0.31"
 
 mongodb:
   url: "mongodb://api_umbrella:api_umbrella@shepherd-mongo.docker:27017/api_umbrella"
@@ -23,7 +23,7 @@ gatekeeper:
 
 hosts:
   - default: true
-    hostname: 10.2.2.30
+    hostname: 10.2.0.31
 
 nginx:
   large_client_header_buffers: 8 64k
@@ -41,10 +41,10 @@ authorisation_registry:
   identifier: "<SHEPHERD_EORI>"
 
 satellite:
-  host: "https://scheme.isharetest.net"
-  token_endpoint: "https://scheme.isharetest.net/connect/token"
-  trusted_list_endpoint: "https://scheme.isharetest.net/trusted_list"
-  identifier: "EU.EORI.NL000000000"
+  host: "<SATELLITE_HOST>"
+  token_endpoint: "<SATELLITE_TOKEN_ENDPOINT>"
+  trusted_list_endpoint: "<SATELLITE_TRUSTED_LIST_ENDPOINT>"
+  identifier: "<SATELLITE_EORI>"
 
 jws:
   identifier: "<SHEPHERD_EORI>"

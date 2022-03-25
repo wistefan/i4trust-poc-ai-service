@@ -5,7 +5,7 @@ services:
   - web
 
 router:
-  web_app_host: "10.2.1.30"
+  web_app_host: "10.2.0.21"
 
 mongodb:
   url: "mongodb://api_umbrella:api_umbrella@happycattle-mongo.docker:27017/api_umbrella"
@@ -23,7 +23,7 @@ gatekeeper:
 
 hosts:
   - default: true
-    hostname: 10.2.1.30
+    hostname: 10.2.0.21
 
 nginx:
   large_client_header_buffers: 8 64k

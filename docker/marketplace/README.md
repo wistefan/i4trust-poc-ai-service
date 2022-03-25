@@ -51,7 +51,7 @@ docker-compose down
 ### BAE
 
 As soon as the Logic Proxy component of the BAE is healthy, you can open the marketplace start page 
-on your host's browser by opening the URL: [http://10.2.0.13:8004](http://10.2.0.13:8004). 
+on your host's browser by opening the URL: [http://10.2.0.12:8004](http://10.2.0.12:8004). 
 Login can be performed using the pre-configured Keyrock IDP with the name "Local IDP". 
 For a first test, hit the Login button and
 enter the admin credentials:
@@ -70,7 +70,7 @@ to use their own IDP for login.
 
 ### Keyrock
 
-You can also login directly at the Keyrock IDP by opening [http://10.2.0.20:8080](http://10.2.0.20:8080) 
+You can also login directly at the Keyrock IDP by opening [http://10.2.0.10:8080](http://10.2.0.10:8080) 
 within your browser and using the same admin credentials. When being logged in, you will find a pre-configured 
 Application for the BAE (Marketplace). Within the Admin UI, you can add further users and authorize them for 
 the BAE.

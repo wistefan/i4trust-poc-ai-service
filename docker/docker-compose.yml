@@ -1,0 +1,26 @@
+version: '3.5'
+
+networks:
+  shared:
+    name: shared
+    external: false
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.2.0.0/16
+  bae:
+    name: bae
+    external: false
+    driver: bridge
+  happycattle:
+    name: happycattle
+    external: false
+    driver: bridge
+  shepherd:
+    name: shepherd
+    external: false
+    driver: bridge
+  rtw:
+    name: rtw
+    external: false
+    driver: bridge

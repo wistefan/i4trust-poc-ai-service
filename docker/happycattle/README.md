@@ -16,7 +16,7 @@ A docker compose file is provided for deploying all the necessary components.
 
 ### Configuration
 
-The Docker compose file uses fixed IPs for each container within the subnet `10.2.1.0`. Therefore make sure 
+The Docker compose file uses fixed IPs for each container within the subnet `10.3.0.0`. Therefore make sure 
 that no IPs are already being used in this subnet.
 
 Some components require private key and certificate files being registered with the EORI of Happy Cattle at the 
@@ -49,7 +49,7 @@ As soon as the components are healthy, you can open the Keyrock IDP and the API 
 
 ### Keyrock
 
-For Keyrock, open the page [http://10.2.1.20:8080](http://10.2.1.20:8080) 
+For Keyrock, open the page [http://10.2.0.20:8080](http://10.2.0.20:8080) 
 within your browser and use the following admin credentials: 
 ```
 Username: admin@test.com
@@ -67,7 +67,7 @@ organisation Happy Cattle.
 
 ### API Umbrella
 
-For API Umbrella, open the page [http://10.2.1.30/admin](http://10.2.1.30/admin) 
+For API Umbrella, open the page [http://10.2.0.21/admin](http://10.2.0.21/admin) 
 within your browser and use the following admin credentials: 
 ```
 Username: admin@test.com
@@ -77,10 +77,10 @@ This account can be used to add API Backends and perform any administrative task
 
 
 ### Orion
-
+REMOVE
 Check that Orion is running by executing the following command:
 ```shell
-curl 10.2.1.40:1026/version
+curl 10.3.0.40:1026/version
 ```
 Any NGSI-LD requests can be sent to the same IP/port.
 

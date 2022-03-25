@@ -70,6 +70,52 @@ else
     exit 1
 fi
 
+# Set iSHARE Satellite ENVs
+if [ -n "$SATELLITE_HOST" ]; then
+    # replace /
+    val="$(sed -z 's:\/:\\/:g' <<<"$SATELLITE_HOST")"
+    # Replace var in yml template
+    sed -i "s/<SATELLITE_HOST>/${val}/g" api-umbrella.yml
+else
+    echo "ERROR: No host set for iSHARE satellite (ENV: SATELLITE_HOST)"
+    exit 1
+fi
+if [ -n "$SATELLITE_TOKEN_ENDPOINT" ]; then
+    # replace /
+    val="$(sed -z 's:\/:\\/:g' <<<"$SATELLITE_TOKEN_ENDPOINT")"
+    # Replace var in yml template
+    sed -i "s/<SATELLITE_TOKEN_ENDPOINT>/${val}/g" api-umbrella.yml
+else
+    echo "ERROR: No token endpoint set for iSHARE satellite (ENV: SATELLITE_TOKEN_ENDPOINT)"
+    exit 1
+fi
+if [ -n "$SATELLITE_TRUSTED_LIST_ENDPOINT" ]; then
+    # replace /
+    val="$(sed -z 's:\/:\\/:g' <<<"$SATELLITE_TRUSTED_LIST_ENDPOINT")"
+    # Replace var in yml template
+    sed -i "s/<SATELLITE_TRUSTED_LIST_ENDPOINT>/${val}/g" api-umbrella.yml
+else
+    echo "ERROR: No parties endpoint set for iSHARE satellite (ENV: SATELLITE_TRUSTED_LIST_ENDPOINT)"
+    exit 1
+fi
+if [ -n "$SATELLITE_EORI" ]; then
+    # Replace var in yml template
+    sed -i "s/<SATELLITE_EORI>/${SATELLITE_EORI}/g" api-umbrella.yml
+else
+    echo "ERROR: No EORI set for iSHARE satellite (ENV: SATELLITE_EORI)"
+    exit 1
+fi
+
+# Wait parameters
+MAX_RETRIES=60
+INTERVAL=10
+
+# Wait for elasticsearch
+while ! curl --silent --fail shepherd-elasticsearch.docker:9200/_cluster/health;
+do
+    echo "Waiting for elasticsearch"; ((i++)) && ((i==${MAX_RETRIES})) && break; sleep ${INTERVAL};
+done
+
 # Start API Umbrella
 echo "Starting API Umbrella"
 /app/docker/dev/docker-start-command
