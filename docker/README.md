@@ -48,8 +48,24 @@ docker compose -f docker-compose.yml \
 ```
 Note that all docker compose files use the context of this directory.
 
+Some components are part of the 'shared' network. These are accessible via the following IPs, also from the 
+docker host:
+| Participant         | Component          | IP         |
+|---------------------|--------------------|------------|
+| Marketplace         | Keyrock            | 10.2.0.10  |
+| Marketplace         | Logic Proxy        | 10.2.0.12  |
+| Happy Cattle        | Keyrock            | 10.2.0.20  |
+| Happy Cattle        | API Umbrella       | 10.2.0.21  |
+| Smart Shepherd      | Keyrock            | 10.2.0.30  |
+| Smart Shepherd      | API Umbrella       | 10.2.0.31  |
+| Real Time Weather   | Keyrock            | 10.2.0.40  |
+| Real Time Weather   | API Umbrella       | 10.2.0.41  |
+
 You can skip certain environments for, e.g., testing purposes, but make sure that always the master docker compose 
 file is included.
+
+In each participant's directory there is a README file containing instructions on how to 
+access/login at certain components.
 
 All containers can be stopped by running:
 ```shell

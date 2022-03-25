@@ -11,33 +11,31 @@ Open tasks:
 ## Instructions
 
 A docker compose file is provided for deploying all the necessary components. 
-
+Note that the networks are created in the master [docker compose](../docker-compose.yml) file, therefore 
+this must be included when deplyoing the components.
 
 
 ### Configuration
 
-The Docker compose file uses fixed IPs for each container within the subnet `10.3.0.0`. Therefore make sure 
-that no IPs are already being used in this subnet.
+This setup contains a default configuration via environment variables stored in env files in the 
+[envs](./envs) directory. No further configuration is required.
 
-Some components require private key and certificate files being registered with the EORI of Happy Cattle at the 
-iSHARE Satellite. These are added as secrets within the docker compose file. 
-Before deploying the components, provide the file locations of private key and certificate as well as the EORI in 
-the [.env](./.env) file.
-
-Alternatively, the content of the private key and certificate files can be directly provided as an ENV by 
-exporting the contents to the variables `HAPPYCATTLE_TOKEN_KEY_CONTENT` and `HAPPYCATTLE_TOKEN_CRT_CONTENT`, respectively.
+Keys, certificates, EORI and the iSHARE Satellite configuration should be added to the 
+[.env](../env) file of the parent directory.
 
 
 ### Deployment
 
-For deploying all components, simply run
+Deployment must be performed from the parent directory. For running just the components of Happy Cattle, 
+change to the parent directory and run:
+
 ```shell
-docker-compose up -d
+docker-compose -f docker-compose.yml -f happycattle/docker-compose.yml up -d
 ```
 
 For stopping all containers, simply run
 ```shell
-docker-compose down
+docker-compose -f docker-compose.yml -f happycattle/docker-compose.yml down
 ```
 
 
@@ -74,14 +72,5 @@ Username: admin@test.com
 Password: admin
 ```
 This account can be used to add API Backends and perform any administrative tasks.
-
-
-### Orion
-REMOVE
-Check that Orion is running by executing the following command:
-```shell
-curl 10.3.0.40:1026/version
-```
-Any NGSI-LD requests can be sent to the same IP/port.
 
 
