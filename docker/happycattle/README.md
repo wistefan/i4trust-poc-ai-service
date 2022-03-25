@@ -12,13 +12,14 @@ Open tasks:
 
 A docker compose file is provided for deploying all the necessary components. 
 Note that the networks are created in the master [docker compose](../docker-compose.yml) file, therefore 
-this must be included when deplyoing the components.
+this must be included when deploying the components.
 
 
 ### Configuration
 
 This setup contains a default configuration via environment variables stored in env files in the 
-[envs](./envs) directory. No further configuration is required.
+[envs](./envs) directory. No further configuration is required, but changes can be made when the 
+setup differs.
 
 Keys, certificates, EORI and the iSHARE Satellite configuration should be added to the 
 [.env](../env) file of the parent directory.

@@ -48,6 +48,23 @@ docker compose -f docker-compose.yml \
 ```
 Note that all docker compose files use the context of this directory.
 
+In case there is the need of different `.env` files for different setups, one can simply make a copy of 
+the [.env](./.env) and add a further parameter to the docker compose command:
+```shell
+# Make a copy
+cp .env my.env
+# Edit configuration in ./my.env
+
+# Deploy components with my.env
+docker compose -f docker-compose.yml \
+	-f marketplace/docker-compose.yml \
+	-f happycattle/docker-compose.yml \
+	-f smart-shepherd/docker-compose.yml \
+	-f real-time-weather/docker-compose.yml \
+	--env-file my.env \
+	up -d
+```
+
 Some components are part of the 'shared' network. These are accessible via the following IPs, also from the 
 docker host:
 | Participant         | Component          | IP         |
