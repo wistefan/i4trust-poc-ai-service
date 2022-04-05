@@ -4,6 +4,8 @@ services:
   - router
   - web
 
+http_port: 8081
+
 router:
   web_app_host: "10.2.0.21"
 
