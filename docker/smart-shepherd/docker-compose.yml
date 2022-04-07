@@ -81,10 +81,8 @@ services:
       - shepherd_cert
     environment:
       - SHEPHERD_EORI
-      - SHEPHERD_TOKEN_KEY_CONTENT
-      - SHEPHERD_TOKEN_CRT_CONTENT
-      - SHEPHERD_TOKEN_KEY_FILE
-      - SHEPHERD_TOKEN_CRT_FILE
+      - SHEPHERD_TOKEN_KEY_CONTENT=${SHEPHERD_KEY}
+      - SHEPHERD_TOKEN_CRT_CONTENT=${SHEPHERD_CRT}
       - SATELLITE_HOST
       - SATELLITE_TOKEN_ENDPOINT
       - SATELLITE_PARTIES_ENDPOINT
@@ -163,9 +161,6 @@ services:
       shepherd:
         aliases:
           - envoy.docker
-    ports:
-      # required for iptables forwarding
-      - 15002:15002
     entrypoint: ./initial-config/init.sh
     volumes:
       - envoy-config:/etc/envoy
@@ -195,6 +190,7 @@ services:
       - PROXY_CLUSTER_YAML_PATH=/envoy-config/cluster.yaml
       - I_SHARE_CERTIFICATE_FOLDER_PATH=/ishare/certs
       - PROXY_SOCKET_ADDRESS_ADDRESS=0.0.0.0
+      - PROXY_SOCKET_ADDRESS_PORT=15002
       - PROXY_EXTERNAL_AUTH_ADDRESS=auth-provider.docker
       - PROXY_EXTERNAL_AUTH_PORT=7070
       - MICRONAUT_SERVER_PORT=9090
@@ -216,3 +212,16 @@ services:
     volumes:
       - ishare-certs:/go/src/app/certs
       
+  ai-notification-proxy:
+    image: quay.io/wi_stefan/notification-proxy:0.0.5
+    container_name: shepard-notif-proxy
+    networks:
+      shepherd:
+        aliases:
+          - notification.docker
+      shared:
+        ipv4_address: 10.2.0.33
+    environment:
+      - MICRONAUT_SERVER_PORT=8080
+    # tenant=null is the default and not required here.
+      - MICRONAUT_HTTP_SERVICES_BROKER_URL=http://shepherd-orion.docker:1026

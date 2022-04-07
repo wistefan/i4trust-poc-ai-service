@@ -8,6 +8,7 @@ networks:
     ipam:
       config:
         - subnet: 10.2.0.0/16
+
   bae:
     name: bae
     external: false
