@@ -25,6 +25,12 @@ fi
 #    echo "Waiting for MongoDB"; ((i++)) && ((i==${MAX_RETRIES})) && break; sleep ${INTERVAL};
 #done;
 
+# Wait for elasticsearch
+while ! curl --silent --fail bae-elasticsearch.docker:9200/_cluster/health;
+do
+    echo "Waiting for elasticsearch"; ((i++)) && ((i==${MAX_RETRIES})) && break; sleep ${INTERVAL};
+done
+
 # Wait for TMForum APIs
 while ! wget -q "http://bae-apis.docker:8080/DSProductInventory";
 do

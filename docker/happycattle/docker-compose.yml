@@ -1,0 +1,232 @@
+version: '3.5'
+
+secrets:
+  happycattle_key:
+    file: "${HAPPYCATTLE_TOKEN_KEY_FILE}"
+  happycattle_cert:
+    file: "${HAPPYCATTLE_TOKEN_CRT_FILE}"
+
+services:
+  happycattle-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    container_name: happycattle-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - transport.publish_port=9200
+    networks:
+      happycattle:
+        aliases:
+          - happycattle-elasticsearch.docker        
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  happycattle-mongo:
+    image: mongo:3.6.21
+    container_name: happycattle-mongo
+    networks:
+      happycattle:
+        aliases:
+          - happycattle-mongo.docker
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./happycattle/envs/mongo.env
+    volumes:
+      - ./happycattle/db/init-mongo.js:/docker-entrypoint-initdb.d/01_init-mongo.js:ro
+      - ./happycattle/db/init-mongo-dump.sh:/docker-entrypoint-initdb.d/02_init-mongo-dump.sh:ro
+      - ./happycattle/db/api_umbrella:/dump/api_umbrella
+
+  happycattle-mysql:
+    image: mysql:5.7
+    container_name: happycattle-mysql
+    networks:
+      happycattle:
+        aliases:
+          - happycattle-mysql.docker
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./happycattle/envs/mysql.env
+    volumes:
+      - ./happycattle/db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
+
+  happycattle-keyrock:
+    image: fiware/idm:i4trust-rc6
+    container_name: happycattle-keyrock
+    networks:
+      happycattle:
+        aliases:
+          - happycattle-keyrock.docker
+      shared:
+        ipv4_address: 10.2.0.20
+    depends_on:
+      - happycattle-mysql
+    entrypoint: /init/init-keyrock.sh
+    env_file:
+      - ./happycattle/envs/keyrock.env
+    secrets:
+      - happycattle_key
+      - happycattle_cert
+    environment:
+      - HAPPYCATTLE_EORI
+      - HAPPYCATTLE_TOKEN_KEY_CONTENT
+      - HAPPYCATTLE_TOKEN_CRT_CONTENT
+      - HAPPYCATTLE_TOKEN_KEY_FILE
+      - HAPPYCATTLE_TOKEN_CRT_FILE
+      - SATELLITE_HOST
+      - SATELLITE_TOKEN_ENDPOINT
+      - SATELLITE_PARTIES_ENDPOINT
+      - SATELLITE_EORI
+    volumes:
+      - ./happycattle/init/init-keyrock.sh:/init/init-keyrock.sh
+
+  happycattle-umbrella:
+    image: fiware/api-umbrella:0.18.0
+    container_name: happycattle-umbrella
+    networks:
+      happycattle:
+        aliases:
+          - happycattle-umbrella.docker
+      shared:
+        ipv4_address: 10.2.0.21
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost/api-umbrella/v1/health | python -mjson.tool | grep '\"status\": \"green\"' || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - happycattle-mongo
+      - happycattle-elasticsearch
+    entrypoint: /init/init-umbrella.sh
+    secrets:
+      - happycattle_key
+      - happycattle_cert
+    environment:
+      - HAPPYCATTLE_EORI
+      - HAPPYCATTLE_TOKEN_KEY_CONTENT=${HAPPY_CATTLE_KEY}
+      - HAPPYCATTLE_TOKEN_CRT_CONTENT=${HAPPY_CATTLE_CRT}
+      - SATELLITE_HOST
+      - SATELLITE_TOKEN_ENDPOINT
+      - SATELLITE_TRUSTED_LIST_ENDPOINT
+      - SATELLITE_EORI
+    volumes:
+      - ./happycattle/init/init-umbrella.sh:/init/init-umbrella.sh
+      - ./happycattle/umbrella-conf/api-umbrella.template.yml:/etc/api-umbrella/api-umbrella.template.yml
+    tmpfs:
+      # Mount the ember-cli tmp directory as a tmpfs partition for better
+      # performance.
+      - /app/src/api-umbrella/admin-ui/tmp:rw,size=128m,mode=1777
+
+  happycattle-orion:
+    image: quay.io/fiware/orion-ld:1.0.1
+    container_name: happycattle-orion
+#    user: 1001:1001
+    networks:
+      happycattle:
+        aliases:
+          - happycattle-orion.docker
+      shared:
+        # needs to be intercepted
+        ipv4_address: 10.2.0.22
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:1026/version || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - happycattle-mongo
+    environment: 
+      - http_proxy=http://10.2.0.23:15001
+      - no_proxy=happycattle-mongo.docker, localhost
+    env_file:
+      - ./happycattle/envs/orion.env
+    command: -dbhost happycattle-mongo.docker -logLevel DEBUG
+
+  # endpoint auth service for happy cattle, envoy listens at 15001
+  envoy:
+    image: quay.io/wi_stefan/envoy
+    hostname: envoy
+    # required for writing the intial config and iptable to match
+    user: root
+    networks:
+      happycattle:
+        aliases:
+          - envoy.docker
+      shared:
+        # needs to be intercepted
+        ipv4_address: 10.2.0.23
+    entrypoint: ./initial-config/init.sh
+    volumes:
+      - envoy-config:/etc/envoy
+      - ./happycattle/init/envoy:/initial-config
+
+  resource-updater:
+    image: quay.io/wi_stefan/envoy-resource-updater
+    hostname: update-resources
+    network_mode: host
+    # required to write at the mounted volumes
+    user: root
+    volumes:
+      - map-folder:/configmap-folder:rw
+      - envoy-config:/proxy-config:rw
+
+  config-service:
+    image: quay.io/wi_stefan/endpoint-configuration-service
+    hostname: config-service
+    networks:
+      happycattle:
+        aliases:
+          - config-service.docker
+      shared:
+        ipv4_address: 10.2.0.24
+    # required to write at the mounted volumes
+    user: root
+    environment:
+      - PROXY_LISTENER_YAML_PATH=/envoy-config/listener.yaml
+      - PROXY_CLUSTER_YAML_PATH=/envoy-config/cluster.yaml
+      - I_SHARE_CERTIFICATE_FOLDER_PATH=/ishare/certs
+      - PROXY_SOCKET_ADDRESS_ADDRESS=0.0.0.0
+      - PROXY_SOCKET_ADDRESS_PORT=15001
+      - PROXY_EXTERNAL_AUTH_ADDRESS=auth-provider.docker
+      - PROXY_EXTERNAL_AUTH_PORT=7070
+      - MICRONAUT_SERVER_PORT=9090
+    volumes:
+      - map-folder:/envoy-config:rw
+      - ishare-certs:/ishare/certs:rw
+
+  auth-provider:
+    image: quay.io/wi_stefan/ishare-auth-provider
+    hostname: auth-provider
+    networks:
+      happycattle:
+        aliases:
+          - auth-provider.docker
+      shared:
+        ipv4_address: 10.2.0.25
+    expose:
+      - 7070
+    environment:
+      - SERVER_PORT=7070
+      - CONFIGURATION_SERVICE_URL=http://config-service.docker:9090
+      - CERTIFICATE_FOLDER=/go/src/app/certs
+    volumes:
+      - ishare-certs:/go/src/app/certs
+
+volumes:
+  ishare-certs: ~
+  map-folder: ~
+  envoy-config: ~

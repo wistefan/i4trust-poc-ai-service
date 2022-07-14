@@ -1,0 +1,1 @@
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"api_umbrella.rate_limits"},{"v":2,"key":{"ts":-1.0},"name":"ts","background":true,"ns":"api_umbrella.rate_limits"},{"v":2,"key":{"expire_at":1.0},"name":"expire_at","ns":"api_umbrella.rate_limits","background":true,"expireAfterSeconds":0.0}],"uuid":"97d0986771694fa0b025a65480524aa3"}

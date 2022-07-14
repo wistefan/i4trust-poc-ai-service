@@ -1,0 +1,57 @@
+app_env: production
+
+services:
+  - router
+  - web
+
+router:
+  web_app_host: "10.2.0.31"
+
+mongodb:
+  url: "mongodb://api_umbrella:api_umbrella@shepherd-mongo.docker:27017/api_umbrella"
+
+elasticsearch:
+  hosts:
+  - http://shepherd-elasticsearch.docker:9200
+
+gatekeeper:
+  api_key_cache: true
+  api_key_methods:
+  - fiware-oauth2
+  - header
+  - getParam
+
+hosts:
+  - default: true
+    hostname: 10.2.0.31
+
+nginx:
+  large_client_header_buffers: 8 64k
+
+web:
+  admin:
+    # Not recommended
+    password_length_min: 4
+    password_length_max: 72
+  
+authorisation_registry:
+  host: "https://shepherd-keyrock.docker:8080"
+  token_endpoint: "https://shepherd-keyrock.docker:8080/oauth2/token"
+  delegation_endpoint: "shepherd-keyrock.docker:8080/ar/policy"
+  identifier: "<SHEPHERD_EORI>"
+
+satellite:
+  host: "<SATELLITE_HOST>"
+  token_endpoint: "<SATELLITE_TOKEN_ENDPOINT>"
+  trusted_list_endpoint: "<SATELLITE_TRUSTED_LIST_ENDPOINT>"
+  identifier: "<SATELLITE_EORI>"
+
+jws:
+  identifier: "<SHEPHERD_EORI>"
+  x5c:
+<SHEPHERD_CERTS>
+  private_key: |
+    <SHEPHERD_KEY>
+
+log:
+  destination: console

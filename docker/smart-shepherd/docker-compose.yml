@@ -1,0 +1,227 @@
+version: '3.5'
+
+secrets:
+  shepherd_key:
+    file: "${SHEPHERD_TOKEN_KEY_FILE}"
+  shepherd_cert:
+    file: "${SHEPHERD_TOKEN_CRT_FILE}"
+
+services:
+  shepherd-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.5.1
+    container_name: shepherd-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - transport.publish_port=9200
+    networks:
+      shepherd:
+        aliases:
+          - shepherd-elasticsearch.docker
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:9200/_cluster/health || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  shepherd-mongo:
+    image: mongo:3.6.21
+    container_name: shepherd-mongo
+    networks:
+      shepherd:
+        aliases:
+          - shepherd-mongo.docker
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus:1}).ok' | mongo admin -u root -p root --quiet | grep 1
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./smart-shepherd/envs/mongo.env
+    volumes:
+      - ./smart-shepherd/db/init-mongo.js:/docker-entrypoint-initdb.d/01_init-mongo.js:ro
+      - ./smart-shepherd/db/init-mongo-dump.sh:/docker-entrypoint-initdb.d/02_init-mongo-dump.sh:ro
+      - ./smart-shepherd/db/api_umbrella:/dump/api_umbrella
+
+  shepherd-mysql:
+    image: mysql:5.7
+    container_name: shepherd-mysql
+    networks:
+      shepherd:
+        aliases:
+          - shepherd-mysql.docker
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -hlocalhost -P 8152 -u root -proot --silent"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    env_file:
+      - ./smart-shepherd/envs/mysql.env
+    volumes:
+      - ./smart-shepherd/db/init-mysql.sql:/docker-entrypoint-initdb.d/init-mysql.sql
+
+  shepherd-keyrock:
+    image: fiware/idm:i4trust-rc6
+    container_name: shepherd-keyrock
+    networks:
+      shepherd:
+        aliases:
+          - shepherd-keyrock.docker
+      shared:
+        ipv4_address: 10.2.0.30
+    depends_on:
+      - shepherd-mysql
+    entrypoint: /init/init-keyrock.sh
+    env_file:
+      - ./smart-shepherd/envs/keyrock.env
+    secrets:
+      - shepherd_key
+      - shepherd_cert
+    environment:
+      - SHEPHERD_EORI
+      - SHEPHERD_TOKEN_KEY_CONTENT=${SHEPHERD_KEY}
+      - SHEPHERD_TOKEN_CRT_CONTENT=${SHEPHERD_CRT}
+      - SATELLITE_HOST
+      - SATELLITE_TOKEN_ENDPOINT
+      - SATELLITE_PARTIES_ENDPOINT
+      - SATELLITE_EORI
+    volumes:
+      - ./smart-shepherd/init/init-keyrock.sh:/init/init-keyrock.sh
+
+  shepherd-umbrella:
+    image: fiware/api-umbrella:0.18.0
+    container_name: shepherd-umbrella
+    networks:
+      shepherd:
+        aliases:
+          - shepherd-umbrella.docker
+      shared:
+        ipv4_address: 10.2.0.31
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost/api-umbrella/v1/health | python -mjson.tool | grep '\"status\": \"green\"' || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - shepherd-mongo
+      - shepherd-elasticsearch
+    entrypoint: /init/init-umbrella.sh
+    secrets:
+      - shepherd_key
+      - shepherd_cert
+    environment:
+      - SHEPHERD_EORI
+      - SHEPHERD_TOKEN_KEY_CONTENT
+      - SHEPHERD_TOKEN_CRT_CONTENT
+      - SHEPHERD_TOKEN_KEY_FILE
+      - SHEPHERD_TOKEN_CRT_FILE
+      - SATELLITE_HOST
+      - SATELLITE_TOKEN_ENDPOINT
+      - SATELLITE_TRUSTED_LIST_ENDPOINT
+      - SATELLITE_EORI
+    volumes:
+      - ./smart-shepherd/init/init-umbrella.sh:/init/init-umbrella.sh
+      - ./smart-shepherd/umbrella-conf/api-umbrella.template.yml:/etc/api-umbrella/api-umbrella.template.yml
+    tmpfs:
+      # Mount the ember-cli tmp directory as a tmpfs partition for better
+      # performance.
+      - /app/src/api-umbrella/admin-ui/tmp:rw,size=128m,mode=1777
+
+  shepherd-orion:
+    image: quay.io/fiware/orion-ld:1.0.1
+    container_name: shepherd-orion
+    networks:
+      shepherd:
+        aliases:
+          - shepherd-orion.docker
+      shared:
+        ipv4_address: 10.2.0.32
+    healthcheck:
+      test: ["CMD-SHELL", "curl --silent --fail localhost:1026/version || exit 1"]
+      start_period: 30s
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    depends_on:
+      - shepherd-mongo
+    env_file:
+      - ./smart-shepherd/envs/orion.env
+    command: -dbhost shepherd-mongo.docker -logLevel DEBUG
+
+  # endpoint auth service for happy cattle, envoy listens at 15001
+  envoy:
+    image: quay.io/wi_stefan/envoy
+    hostname: envoy
+    # required for writing the intial config and iptable to match
+    user: root
+    networks:
+      shepherd:
+        aliases:
+          - envoy.docker
+    entrypoint: ./initial-config/init.sh
+    volumes:
+      - envoy-config:/etc/envoy
+      - ./happycattle/init/envoy:/initial-config
+
+  resource-updater:
+    image: quay.io/wi_stefan/envoy-resource-updater
+    hostname: update-resources
+    network_mode: host
+    # required to write at the mounted volumes
+    user: root
+    volumes:
+      - map-folder:/configmap-folder:rw
+      - envoy-config:/proxy-config:rw
+
+  config-service:
+    image: quay.io/wi_stefan/endpoint-configuration-service
+    hostname: config-service
+    networks:
+      shepherd:
+        aliases:
+          - config-service.docker
+    # required to write at the mounted volumes
+    user: root
+    environment:
+      - PROXY_LISTENER_YAML_PATH=/envoy-config/listener.yaml
+      - PROXY_CLUSTER_YAML_PATH=/envoy-config/cluster.yaml
+      - I_SHARE_CERTIFICATE_FOLDER_PATH=/ishare/certs
+      - PROXY_SOCKET_ADDRESS_ADDRESS=0.0.0.0
+      - PROXY_SOCKET_ADDRESS_PORT=15002
+      - PROXY_EXTERNAL_AUTH_ADDRESS=auth-provider.docker
+      - PROXY_EXTERNAL_AUTH_PORT=7070
+      - MICRONAUT_SERVER_PORT=9090
+    volumes:
+      - map-folder:/envoy-config:rw
+      - ishare-certs:/ishare/certs:rw
+
+  auth-provider:
+    image: quay.io/wi_stefan/ishare-auth-provider
+    hostname: auth-provider
+    networks:
+      shepherd:
+        aliases:
+          - auth-provider.docker
+    environment:
+      - SERVER_PORT=7070
+      - CONFIGURATION_SERVICE_URL=http://config-service.docker:9090
+      - CERTIFICATE_FOLDER=/go/src/app/certs/
+    volumes:
+      - ishare-certs:/go/src/app/certs
+      
+  ai-notification-proxy:
+    image: quay.io/wi_stefan/notification-proxy:0.0.5
+    container_name: shepard-notif-proxy
+    networks:
+      shepherd:
+        aliases:
+          - notification.docker
+      shared:
+        ipv4_address: 10.2.0.33
+    environment:
+      - MICRONAUT_SERVER_PORT=8080
+    # tenant=null is the default and not required here.
+      - MICRONAUT_HTTP_SERVICES_BROKER_URL=http://shepherd-orion.docker:1026
