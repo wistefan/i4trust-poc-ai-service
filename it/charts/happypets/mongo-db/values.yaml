@@ -1,0 +1,11 @@
+mongodb:
+  auth:
+    enabled: false
+    
+  architecture: standalone
+  podSecurityContext:
+    enabled: false
+  containerSecurityContext:
+    enabled: false
+  persistence:
+    enabled: false

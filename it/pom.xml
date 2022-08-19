@@ -38,6 +38,8 @@
         <version.org.junit>5.8.1</version.org.junit>
         <version.org.awaitility>4.0.3</version.org.awaitility>
         <version.org.apache.maven.plugins.maven-surefire-plugin>3.0.0-M5</version.org.apache.maven.plugins.maven-surefire-plugin>
+        <version.io.kokuwa.maven.k3s-plugin>0.5.0</version.io.kokuwa.maven.k3s-plugin>
+        <version.io.kokuwa.helm-maven-plugin>6.3.0</version.io.kokuwa.helm-maven-plugin>
 
         <!-- cucumber token, see: https://reports.cucumber.io -->
         <cucumber.publish-token>CUCUMBER_PUBLISH_TOKEN</cucumber.publish-token>
@@ -367,6 +369,49 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.0.0-M7</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- this is very important to avoid classpath conflicts between the micronaut-test-context and the beans present inside the shaded-jar -->
+                    <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+                    <failIfNoTests>true</failIfNoTests>
+                    <includes>
+                        <include>RunCucumberTestIT.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.kokuwa.maven</groupId>
+                <artifactId>helm-maven-plugin</artifactId>
+                <version>${version.io.kokuwa.helm-maven-plugin}</version>
+                <configuration>
+                    <chartDirectory>${project.basedir}/charts</chartDirectory>
+                    <skipTemplate>false</skipTemplate>
+
+                    <additionalArguments>--output-dir ${project.build.directory}/k3s</additionalArguments>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>io.kokuwa.maven</groupId>
+                <artifactId>k3s-maven-plugin</artifactId>
+                <version>${version.io.kokuwa.maven.k3s-plugin}</version>
+                <configuration>
+                    <streamLogs>true</streamLogs>
+                    <manifests>${project.build.directory}/k3s</manifests>
+                    <command>kubectl apply -R -f .</command>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
+
 </project>
