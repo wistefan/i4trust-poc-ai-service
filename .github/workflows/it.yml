@@ -16,7 +16,7 @@ jobs:
         java-package: jdk
 
     - name: Run test
-      id: test
+      id: integration-test
       run: |
         mvn clean integration-test
         
