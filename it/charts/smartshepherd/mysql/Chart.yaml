@@ -1,0 +1,11 @@
+
+apiVersion: v2
+name: mysql-db
+
+type: application
+version: 1.0.0
+
+dependencies:
+  - name: mysql
+    version: 9.3.1
+    repository: https://charts.bitnami.com/bitnami

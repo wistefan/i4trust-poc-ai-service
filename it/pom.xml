@@ -38,7 +38,7 @@
         <version.org.junit>5.8.1</version.org.junit>
         <version.org.awaitility>4.0.3</version.org.awaitility>
         <version.org.apache.maven.plugins.maven-surefire-plugin>3.0.0-M5</version.org.apache.maven.plugins.maven-surefire-plugin>
-        <version.io.kokuwa.maven.k3s-plugin>0.5.0</version.io.kokuwa.maven.k3s-plugin>
+        <version.io.kokuwa.maven.k3s-plugin>0.6.1</version.io.kokuwa.maven.k3s-plugin>
         <version.io.kokuwa.helm-maven-plugin>6.3.0</version.io.kokuwa.helm-maven-plugin>
 
         <!-- cucumber token, see: https://reports.cucumber.io -->
@@ -390,25 +390,176 @@
                 </configuration>
             </plugin>
             <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/charts</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/charts</directory>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
                 <groupId>io.kokuwa.maven</groupId>
                 <artifactId>helm-maven-plugin</artifactId>
                 <version>${version.io.kokuwa.helm-maven-plugin}</version>
                 <configuration>
-                    <chartDirectory>${project.basedir}/charts</chartDirectory>
-                    <skipTemplate>false</skipTemplate>
-
-                    <additionalArguments>--output-dir ${project.build.directory}/k3s</additionalArguments>
+                    <chartDirectory>${project.build.directory}/charts</chartDirectory>
                 </configuration>
+                <executions>
+                    <execution>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>init</goal>
+                            <goal>dependency-build</goal>
+                        </goals>
+                        <configuration>
+                            <chartDirectory>${project.build.directory}/charts</chartDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-ns</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>init</goal>
+                            <goal>template</goal>
+                        </goals>
+                        <configuration>
+                            <chartDirectory>${project.build.directory}/charts/default</chartDirectory>
+                            <skipTemplate>false</skipTemplate>
+                            <additionalArguments>--output-dir ${project.build.directory}/k3s/default</additionalArguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>infra</id>
+                        <goals>
+                            <goal>init</goal>
+                            <goal>template</goal>
+                        </goals>
+                        <configuration>
+                            <chartDirectory>${project.build.directory}/charts/infra</chartDirectory>
+                            <skipTemplate>false</skipTemplate>
+                            <additionalArguments>--namespace happypets --output-dir ${project.build.directory}/k3s/infra</additionalArguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>happypets</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>init</goal>
+                            <goal>template</goal>
+                        </goals>
+                        <configuration>
+                            <chartDirectory>${project.build.directory}/charts/happypets</chartDirectory>
+                            <skipTemplate>false</skipTemplate>
+                            <additionalArguments>--namespace happypets --output-dir ${project.build.directory}/k3s/happypets</additionalArguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>smartshepherd</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>init</goal>
+                            <goal>template</goal>
+                        </goals>
+                        <configuration>
+                            <chartDirectory>${project.build.directory}/charts/smartshepherd</chartDirectory>
+                            <skipTemplate>false</skipTemplate>
+                            <additionalArguments>--namespace smartshepherd --output-dir ${project.build.directory}/k3s/smartshepherd</additionalArguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>io.kokuwa.maven</groupId>
                 <artifactId>k3s-maven-plugin</artifactId>
                 <version>${version.io.kokuwa.maven.k3s-plugin}</version>
-                <configuration>
-                    <streamLogs>true</streamLogs>
-                    <manifests>${project.build.directory}/k3s</manifests>
-                    <command>kubectl apply -R -f .</command>
-                </configuration>
+                <executions>
+                    <execution>
+                        <id>default-ns</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>create</goal>
+                            <goal>start</goal>
+                            <goal>kubectl</goal>
+                        </goals>
+                        <configuration>
+                            <streamLogs>true</streamLogs>
+                            <manifests>${project.build.directory}/k3s/default</manifests>
+                            <command>kubectl apply -R -f .</command>
+                            <portBindings>
+                                <portBinding>8090:8090</portBinding>
+                                <portBinding>9090:9090</portBinding>
+                            </portBindings>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>infra</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>create</goal>
+                            <goal>start</goal>
+                            <goal>kubectl</goal>
+                        </goals>
+                        <configuration>
+                            <streamLogs>true</streamLogs>
+                            <manifests>${project.build.directory}/k3s/infra</manifests>
+                            <command>kubectl apply -R -f . -n infra</command>
+                            <portBindings>
+                                <portBinding>8090:8090</portBinding>
+                                <portBinding>9090:9090</portBinding>
+                            </portBindings>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>happypets</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>create</goal>
+                            <goal>start</goal>
+                            <goal>kubectl</goal>
+                        </goals>
+                        <configuration>
+                            <streamLogs>true</streamLogs>
+                            <manifests>${project.build.directory}/k3s/happypets</manifests>
+                            <command>kubectl apply -R -f . -n happypets</command>
+                            <portBindings>
+                                <portBinding>8080:8080</portBinding>
+                                <portBinding>9080:9080</portBinding>
+                            </portBindings>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>smartshepherd</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>create</goal>
+                            <goal>start</goal>
+                            <goal>kubectl</goal>
+                        </goals>
+                        <configuration>
+                            <streamLogs>true</streamLogs>
+                            <manifests>${project.build.directory}/k3s/smartshepherd</manifests>
+                            <command>kubectl apply -R -f . -n smartshepherd</command>
+                            <portBindings>
+                                <portBinding>8090:8090</portBinding>
+                                <portBinding>9090:9090</portBinding>
+                            </portBindings>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -15,20 +15,8 @@ jobs:
         java-version: '17'
         java-package: jdk
 
-    - name: Run compose
-      id: compose
-      run: |
-        cd docker
-        docker-compose -f docker-compose.yml -f smart-shepherd/docker-compose.yml -f happycattle/docker-compose.yml up -d
-        
-    - name: Run tests
+    - name: Run test
       id: test
       run: |
-        cd it/
-        mvn clean install -Dcucumber.publish-token=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
-
-    - name: Collect logs
-      if: ${{ failure() }}
-      run: |
-        cd docker
-        docker-compose -f docker-compose.yml -f smart-shepherd/docker-compose.yml -f happycattle/docker-compose.yml logs
+        mvn clean integration-test
+        

@@ -1,0 +1,13 @@
+# only required for k3s
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgresql
+spec:
+  hostPath:
+    path: /var/lib/rancher/k3s/storage/postgresql
+    type: DirectoryOrCreate
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 1Gi

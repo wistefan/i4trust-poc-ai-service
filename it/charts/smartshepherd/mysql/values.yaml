@@ -1,0 +1,8 @@
+mysql:
+  fullnameOverride: mysql
+  architecture: standalone
+  primary:
+    persistence:
+      enabled: false
+  auth:
+    rootPassword: password

@@ -1,0 +1,77 @@
+keyrock:
+  statefulset:
+    image:
+      repository: fiware/idm
+      tag: i4trust-rc7-header-size
+
+  db:
+    user: root
+    password: password
+    host: mysql
+
+  admin:
+    user: admin
+    email: dennis.wendland@fiware.org
+
+  service:
+    type: LoadBalancer
+    port: 9080
+
+  host: http://localhost:9080
+  
+  route:
+    enabled: false
+  ## Theme configuration for Keyrock
+  theme:
+    ## -- Enable theme
+    enabled: false
+
+  ## Configuration of Authorisation Registry (AR)
+  authorisationRegistry:
+    # -- Enable usage of authorisation registry
+    enabled: true
+    # -- Identifier (EORI) of AR
+    identifier: "EU.EORI.NL000000004"
+    # -- URL of AR
+    #url: "https://ar.isharetest.net"
+    url: "internal"
+    # -- Token endpoint of AR
+    tokenEndpoint: "https://ar.isharetest.net/connect/token"
+    # -- Delegation endpoint of AR
+    delegationEndpoint: "https://ar.isharetest.net/delegation"
+
+  ## Configuration of iSHARE Satellite
+  satellite:
+    # -- Enable usage of satellite
+    enabled: true
+    # -- Identifier (EORI) of satellite
+    identifier: "EU.EORI.NL000000000"
+    # -- URL of satellite
+    url: "http://satellite.infra.svc.cluster.local:8080"
+    # -- Token endpoint of satellite
+    tokenEndpoint: "http://satellite.infra.svc.cluster.local:8080/connect/token"
+    # -- Parties endpoint of satellite
+    partiesEndpoint: "http://satellite.infra.svc.cluster.local:8080/parties"
+
+  ## -- Configuration of local key and certificate for validation and generation of tokens
+  token:
+    # -- Enable storage of local key and certificate
+    enabled: true
+    # -- Identifier (EORI) of local organisation
+    identifier: "EU.EORI.NLPACKETDEL"
+    key: "blub"
+    cert: "blob"
+
+  additionalEnvVars:
+    - name: IDM_TITLE
+      value: "Packet Delivery Co. - Company Portal"
+    - name: IDM_DEBUG
+      value: "true"
+    - name: DEBUG
+      value: "*"
+    - name: IDM_DB_NAME
+      value: i4trust_demo_pdc_idm
+    - name: IDM_DB_SEED
+      value: "true"
+    - name: IDM_SERVER_MAX_HEADER_SIZE
+      value: "32768"

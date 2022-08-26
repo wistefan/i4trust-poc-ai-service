@@ -1,0 +1,11 @@
+apiVersion: v2
+name: apollo
+
+type: application
+version: 0.0.5
+appVersion: "0.0.10"
+
+dependencies:
+  - name: apollo
+    version: 0.0.5
+    repository: https://fiware.github.io/helm-charts

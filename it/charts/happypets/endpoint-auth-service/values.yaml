@@ -1,0 +1,38 @@
+endpoint-auth-service:
+
+  ## configuration for the sidecar, will be applied by the injector if not configured otherwise
+  sidecar:
+
+    portsToIgnore: 5432,443,27017
+
+  ## configuration for the automatic sidecar injection
+  sidecarInjector:
+    ## -- should the envoy sidecar be injected into annotated pods
+    enabled: true
+
+    # -- option to override the fullname config in the _helpers.tpl
+    fullnameOverride: eas-sidecar-injector
+
+    # -- configuration for the sidecar injection certificate
+    certificate:
+      # -- type of certificate to use, currently supported: cert-manager and inline
+      type: cert-manager
+      # -- issuer config, in case cert-manager is used
+      issuer:
+        # -- name of the issuer
+        name: self-signed
+        # -- kind of the issuer
+        kind: ClusterIssuer
+        # -- group of the issuer
+        group: cert-manager.io
+
+    restrictNamespace:
+      enabled: true
+      value: happypets
+    restrictObjects:
+      enabled: true
+      value: happypets
+
+  ishare:
+    storage:
+      enabled: false
