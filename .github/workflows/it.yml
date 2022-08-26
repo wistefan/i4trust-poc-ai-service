@@ -18,5 +18,6 @@ jobs:
     - name: Run test
       id: integration-test
       run: |
+        cd it/ 
         mvn clean integration-test
         
