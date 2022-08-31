@@ -28,11 +28,19 @@ endpoint-auth-service:
 
     restrictNamespace:
       enabled: true
-      value: happypets
+      value: happycattle
     restrictObjects:
       enabled: true
-      value: happypets
+      value: happycattle
+
+  configServie:
+    service:
+      port: 8070
+      type: LoadBalancer
 
   ishare:
+    service:
+      port: 8060
+      type: LoadBalancer
     storage:
       enabled: false

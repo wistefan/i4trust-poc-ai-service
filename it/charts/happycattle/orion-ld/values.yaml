@@ -51,7 +51,7 @@ deployment:
     pullPolicy: IfNotPresent
   # -- additional labels for the deployment, if required
   additionalLabels:
-    sidecar-injection: happypets
+    sidecar-injection: happycattle
   # -- additional annotations for the deployment, if required
   additionalAnnotations:
     sidecar.k8s.fiware.org/request: "envoy-sidecar"
