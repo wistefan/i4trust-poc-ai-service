@@ -154,7 +154,7 @@ broker:
   ## logging configuration of the orion broker
   logging:
     # -- log level of the broker
-    level: "WARN"
+    level: "DEBUG"
 
   ## database configuration
   db:

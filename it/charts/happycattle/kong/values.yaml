@@ -48,3 +48,15 @@ kong:
   deployment:
     test:
       enabled: false
+
+  customEnv:
+    FIWARE_JWS_PRIVATE_KEY:
+      valueFrom:
+        secretKeyRef:
+          key: FIWARE_JWS_PRIVATE_KEY
+          name: kong-secrets-cert
+    FIWARE_JWS_X5C:
+      valueFrom:
+        secretKeyRef:
+          key: FIWARE_JWS_X5C
+          name: kong-secrets-cert

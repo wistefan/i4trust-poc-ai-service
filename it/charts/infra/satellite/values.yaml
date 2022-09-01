@@ -1,5 +1,10 @@
 ishare-satellite:
   fullnameOverride: "satellite"
+  deployment:
+    image:
+      repository: wistefan/test-sat
+      tag: latest
+      pullPolicy: Always
   satellite:
     logLevel: "debug"
   config:
@@ -167,7 +172,7 @@ ishare-satellite:
       -----END CERTIFICATE-----
 
 
-  trusted_list:
+    trusted_list:
     - name: FIWARETEST-CA
       status: "granted"
       validity: "valid"
@@ -210,7 +215,7 @@ ishare-satellite:
         T24TH+D4ZStslNQrvSZ+DelsqY5qPafRk1A5HNeXmBpRSUneJfKumjYp2wtcdw==
         -----END CERTIFICATE-----
 
-  parties:
+    parties:
     - id: "EU.EORI.HAPPYCATTLE"
       name: "Happycattle Inc."
       status: "Active"

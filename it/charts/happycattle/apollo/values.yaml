@@ -1,2 +1,5 @@
 apollo:
   brokerUrl: http://release-name-orion-ld:1026
+  deployment:
+    image:
+      tag: 0.0.11-PRE-11

@@ -258,7 +258,7 @@
                             <generateModelTests>false</generateModelTests>
                             <generatorName>java</generatorName>
                             <modelNameSuffix>VO</modelNameSuffix>
-                            <output>${project.build.directory}/generated-sources/openapi</output>
+                            <output>${project.build.directory}/generated-sources/src</output>
                             <configOptions>
                                 <useOptional>true</useOptional>
                                 <supportsAdditionalPropertiesWithComposedSchema>true</supportsAdditionalPropertiesWithComposedSchema>
@@ -280,7 +280,7 @@
                             <generateAliasAsModel>true</generateAliasAsModel>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
-                            <generateApi>false</generateApi>
+                            <!-- the plain java generator does not properly handel one-of-relationships -->
                             <generatorName>micronaut</generatorName>
                             <modelNameSuffix>VO</modelNameSuffix>
                             <configOptions>
@@ -295,6 +295,9 @@
                                 <jacksonDatabindNullable>false</jacksonDatabindNullable>
                                 <supportsAdditionalPropertiesWithComposedSchema>true</supportsAdditionalPropertiesWithComposedSchema>
                             </configOptions>
+                            <typeMappings>
+                                <typeMapping>java.util.Date=java.time.Instant</typeMapping>
+                            </typeMappings>
                         </configuration>
                     </execution>
                 </executions>
@@ -381,8 +384,6 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!-- this is very important to avoid classpath conflicts between the micronaut-test-context and the beans present inside the shaded-jar -->
-                    <classesDirectory>${project.build.outputDirectory}</classesDirectory>
                     <failIfNoTests>true</failIfNoTests>
                     <includes>
                         <include>RunCucumberTestIT.java</include>
@@ -451,20 +452,20 @@
                         <configuration>
                             <chartDirectory>${project.build.directory}/charts/infra</chartDirectory>
                             <skipTemplate>false</skipTemplate>
-                            <additionalArguments>--namespace happypets --output-dir ${project.build.directory}/k3s/infra</additionalArguments>
+                            <additionalArguments>--namespace happycattle --output-dir ${project.build.directory}/k3s/infra</additionalArguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>happypets</id>
+                        <id>happycattle</id>
                         <phase>test-compile</phase>
                         <goals>
                             <goal>init</goal>
                             <goal>template</goal>
                         </goals>
                         <configuration>
-                            <chartDirectory>${project.build.directory}/charts/happypets</chartDirectory>
+                            <chartDirectory>${project.build.directory}/charts/happycattle</chartDirectory>
                             <skipTemplate>false</skipTemplate>
-                            <additionalArguments>--namespace happypets --output-dir ${project.build.directory}/k3s/happypets</additionalArguments>
+                            <additionalArguments>--namespace happycattle --output-dir ${project.build.directory}/k3s/happycattle</additionalArguments>
                         </configuration>
                     </execution>
                     <execution>
@@ -489,7 +490,7 @@
                 <executions>
                     <execution>
                         <id>default-ns</id>
-                        <phase>integration-test</phase>
+                        <phase>pre-integration-test</phase>
                         <goals>
                             <goal>create</goal>
                             <goal>start</goal>
@@ -500,14 +501,20 @@
                             <manifests>${project.build.directory}/k3s/default</manifests>
                             <command>kubectl apply -R -f .</command>
                             <portBindings>
+                                <portBinding>8060:8060</portBinding>
+                                <portBinding>8070:8070</portBinding>
+                                <portBinding>8080:8080</portBinding>
                                 <portBinding>8090:8090</portBinding>
+                                <portBinding>9060:9060</portBinding>
+                                <portBinding>9070:9070</portBinding>
+                                <portBinding>9080:9080</portBinding>
                                 <portBinding>9090:9090</portBinding>
                             </portBindings>
                         </configuration>
                     </execution>
                     <execution>
                         <id>infra</id>
-                        <phase>integration-test</phase>
+                        <phase>pre-integration-test</phase>
                         <goals>
                             <goal>create</goal>
                             <goal>start</goal>
@@ -518,14 +525,20 @@
                             <manifests>${project.build.directory}/k3s/infra</manifests>
                             <command>kubectl apply -R -f . -n infra</command>
                             <portBindings>
+                                <portBinding>8060:8060</portBinding>
+                                <portBinding>8070:8070</portBinding>
+                                <portBinding>8080:8080</portBinding>
                                 <portBinding>8090:8090</portBinding>
+                                <portBinding>9060:9060</portBinding>
+                                <portBinding>9070:9070</portBinding>
+                                <portBinding>9080:9080</portBinding>
                                 <portBinding>9090:9090</portBinding>
                             </portBindings>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>happypets</id>
-                        <phase>integration-test</phase>
+                        <id>happycattle</id>
+                        <phase>pre-integration-test</phase>
                         <goals>
                             <goal>create</goal>
                             <goal>start</goal>
@@ -533,17 +546,23 @@
                         </goals>
                         <configuration>
                             <streamLogs>true</streamLogs>
-                            <manifests>${project.build.directory}/k3s/happypets</manifests>
-                            <command>kubectl apply -R -f . -n happypets</command>
+                            <manifests>${project.build.directory}/k3s/happycattle</manifests>
+                            <command>kubectl apply -R -f . -n happycattle</command>
                             <portBindings>
+                                <portBinding>8060:8060</portBinding>
+                                <portBinding>8070:8070</portBinding>
                                 <portBinding>8080:8080</portBinding>
+                                <portBinding>8090:8090</portBinding>
+                                <portBinding>9060:9060</portBinding>
+                                <portBinding>9070:9070</portBinding>
                                 <portBinding>9080:9080</portBinding>
+                                <portBinding>9090:9090</portBinding>
                             </portBindings>
                         </configuration>
                     </execution>
                     <execution>
                         <id>smartshepherd</id>
-                        <phase>integration-test</phase>
+                        <phase>pre-integration-test</phase>
                         <goals>
                             <goal>create</goal>
                             <goal>start</goal>
@@ -554,7 +573,13 @@
                             <manifests>${project.build.directory}/k3s/smartshepherd</manifests>
                             <command>kubectl apply -R -f . -n smartshepherd</command>
                             <portBindings>
+                                <portBinding>8060:8060</portBinding>
+                                <portBinding>8070:8070</portBinding>
+                                <portBinding>8080:8080</portBinding>
                                 <portBinding>8090:8090</portBinding>
+                                <portBinding>9060:9060</portBinding>
+                                <portBinding>9070:9070</portBinding>
+                                <portBinding>9080:9080</portBinding>
                                 <portBinding>9090:9090</portBinding>
                             </portBindings>
                         </configuration>

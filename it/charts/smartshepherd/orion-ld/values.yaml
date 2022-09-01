@@ -10,7 +10,7 @@ fullnameOverride: ""
 ## configuration for the k8s service to access orion
 service:
   # -- service type
-  type: ClusterIP
+  type: LoadBalancer
   # -- port to be used by the service
   port: 1026
   # -- addtional annotations, if required
